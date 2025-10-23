@@ -1,0 +1,33 @@
+# Source files
+src/
+example/
+
+# Config files
+tsconfig.json
+tsconfig.build.json
+vite.config.ts
+
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Node
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Old files (if any)
+index.html
+waterfallFlow.js
+
+# Only include dist and README in npm package
+
