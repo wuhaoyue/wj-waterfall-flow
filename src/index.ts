@@ -5,8 +5,11 @@
 
 import { WaterfallFlow } from './components/WaterfallFlow';
 
-// Register the custom element
-if (!customElements.get('waterfall-flow')) {
+// Check if running in browser environment
+const isBrowser = typeof window !== 'undefined' && typeof customElements !== 'undefined';
+
+// Register the custom element only in browser
+if (isBrowser && !customElements.get('waterfall-flow')) {
   customElements.define('waterfall-flow', WaterfallFlow);
 }
 

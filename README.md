@@ -169,6 +169,84 @@ function WaterfallDemo() {
 }
 ```
 
+### 在 Nuxt 3/4 中使用
+
+由于 Nuxt 使用 SSR，需要确保组件只在客户端加载：
+
+**方法一：使用 `<ClientOnly>` 组件（推荐）**
+
+```vue
+<template>
+  <ClientOnly>
+    <waterfall-flow
+      :row-gap="10"
+      :column-gap="10"
+      :min-column-width="200"
+      onLoadMore="loadMore"
+    >
+      <div 
+        v-for="item in items" 
+        :key="item.id" 
+        class="waterfall-item"
+      >
+        <img :src="item.image" :alt="item.title">
+        <div class="content">{{ item.title }}</div>
+      </div>
+
+      <template #loading>
+        <div class="loading">加载中...</div>
+      </template>
+    </waterfall-flow>
+  </ClientOnly>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+
+const items = ref([]);
+
+// 只在客户端导入
+if (process.client) {
+  import('wj-waterfall-flow');
+}
+
+onMounted(() => {
+  window.loadMore = (component) => {
+    // 加载逻辑
+    fetchMoreItems().then(newItems => {
+      items.value.push(...newItems);
+      component.finishLoading(newItems.length > 0);
+    });
+  };
+});
+</script>
+```
+
+**方法二：创建插件**
+
+创建 `plugins/waterfall.client.ts`：
+
+```typescript
+// plugins/waterfall.client.ts
+import 'wj-waterfall-flow';
+
+export default defineNuxtPlugin(() => {
+  // 组件已自动注册
+});
+```
+
+然后在组件中使用：
+
+```vue
+<template>
+  <ClientOnly>
+    <waterfall-flow row-gap="10" column-gap="10">
+      <!-- 内容 -->
+    </waterfall-flow>
+  </ClientOnly>
+</template>
+```
+
 ## 📖 API
 
 ### 属性 (Attributes)
