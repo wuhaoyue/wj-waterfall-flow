@@ -132,7 +132,14 @@ export class WaterfallFlow extends HTMLElement {
     this.observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          console.log('👀 IntersectionObserver 触发:', {
+            isIntersecting: entry.isIntersecting,
+            loading: this.loading,
+            hasMore: this.hasMore
+          });
+          
           if (entry.isIntersecting && !this.loading && this.hasMore) {
+            console.log('✅ 条件满足，触发加载');
             this.handleLoadMore();
           }
         });
@@ -408,8 +415,17 @@ export class WaterfallFlow extends HTMLElement {
   }
 
   private _handleLoadMore(): void {
-    if (this.loading || !this.hasMore) return;
+    if (this.loading || !this.hasMore) {
+      if (this.loading) {
+        console.log('⏸️ 已在加载中，跳过此次请求');
+      }
+      if (!this.hasMore) {
+        console.log('⏹️ 没有更多数据，停止加载');
+      }
+      return;
+    }
 
+    console.log('🚀 触发 load-more 事件...');
     this.loading = true;
     this.showLoading();
 
@@ -465,21 +481,31 @@ export class WaterfallFlow extends HTMLElement {
     this.hideLoading();
 
     if (!hasMore) {
+      // 没有更多数据时，断开观察器
       if (this.observer) {
         this.observer.disconnect();
       }
     } else {
-      setTimeout(() => {
-        const trigger = this.shadowRoot?.querySelector('.loading-trigger');
-        if (trigger) {
-          const rect = trigger.getBoundingClientRect();
-          const isInViewport = rect.top < window.innerHeight + 200;
+      // 有更多数据时，等待布局稳定后检查是否需要继续加载
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const trigger = this.shadowRoot?.querySelector('.loading-trigger');
+          if (trigger && this.observer) {
+            // 重新观察 trigger 以确保 IntersectionObserver 能够再次触发
+            this.observer.unobserve(trigger);
+            this.observer.observe(trigger);
+            
+            // 检查是否已经在视口内
+            const rect = trigger.getBoundingClientRect();
+            const isInViewport = rect.top < window.innerHeight + 200;
 
-          if (isInViewport && !this.loading && this.hasMore) {
-            this.handleLoadMore();
+            if (isInViewport && !this.loading && this.hasMore) {
+              console.log('🔄 Loading trigger 仍在视口内，继续加载...');
+              this.handleLoadMore();
+            }
           }
-        }
-      }, 100);
+        }, 150);
+      });
     }
   }
 
