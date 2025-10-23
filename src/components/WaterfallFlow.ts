@@ -413,11 +413,7 @@ export class WaterfallFlow extends HTMLElement {
     this.loading = true;
     this.showLoading();
 
-    const callbackName = this.getAttribute('onLoadMore');
-    if (callbackName && typeof (window as any)[callbackName] === 'function') {
-      this.loadMoreCallback = (window as any)[callbackName];
-    }
-
+    // 触发自定义事件，让外部通过事件监听处理
     const event = new CustomEvent<LoadMoreDetail>('load-more', {
       detail: {
         currentCount: this.items.length,
@@ -428,11 +424,24 @@ export class WaterfallFlow extends HTMLElement {
     });
 
     this.dispatchEvent(event);
-
-    if (this.loadMoreCallback) {
-      this.loadMoreCallback(this);
-    } else {
-      this.finishLoading(false);
+    
+    // 如果事件被阻止了默认行为，说明外部正在处理
+    // 否则，尝试调用全局函数作为向后兼容
+    if (!event.defaultPrevented) {
+      const callbackName = this.getAttribute('onLoadMore');
+      if (callbackName && typeof (window as any)[callbackName] === 'function') {
+        this.loadMoreCallback = (window as any)[callbackName];
+        if (this.loadMoreCallback) {
+          this.loadMoreCallback(this);
+        }
+      } else {
+        // 如果没有监听器也没有全局函数，标记加载完成
+        console.warn(
+          'waterfall-flow: 没有找到 load-more 事件监听器或 onLoadMore 回调函数。' +
+          '请使用 @load-more 或 addEventListener("load-more", handler) 来处理加载。'
+        );
+        this.finishLoading(false);
+      }
     }
   }
 

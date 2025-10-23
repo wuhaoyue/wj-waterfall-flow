@@ -176,7 +176,7 @@
             <button id="resetBtn">重置</button>
         </div>
 
-        <waterfall-flow id="waterfall" row-gap="10" column-gap="10" min-column-width="200" onLoadMore="loadMore">
+        <waterfall-flow id="waterfall" row-gap="10" column-gap="10" min-column-width="200">
             <!-- 项目将通过 JavaScript 动态添加 -->
             <div slot="loading" style="padding: 20px; text-align: center;">
                 <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite;">
@@ -223,28 +223,56 @@
             return item;
         }
 
-        /**
-         * 全局加载更多函数
-         */
-        window.loadMore = function(waterfallComponent) {
+        // ===================================
+        // 方法一：使用事件监听（推荐）
+        // ===================================
+        const waterfall = document.getElementById('waterfall');
+        
+        waterfall.addEventListener('load-more', (event) => {
+            console.log('✅ load-more 事件触发', event.detail);
+            
+            // 重要：阻止默认行为，告诉组件我们正在处理
+            event.preventDefault();
+            
             currentPage++;
-
+            const { currentCount, finishLoading } = event.detail;
+            
+            console.log(`📦 当前已有 ${currentCount} 个项目，正在加载第 ${currentPage} 页...`);
+            
+            // 模拟异步加载数据
             setTimeout(() => {
                 const itemsPerPage = 12;
                 const startIndex = (currentPage - 1) * itemsPerPage + 1;
                 const endIndex = currentPage * itemsPerPage;
-
+                
                 for (let i = startIndex; i <= endIndex; i++) {
                     const item = createWaterfallItem(i);
-                    waterfallComponent.appendChild(item);
+                    waterfall.appendChild(item);
                 }
-
-                waterfallComponent.finishLoading(true);
+                
+                console.log(`✅ 第 ${currentPage} 页加载完成`);
+                
+                // 通知组件加载完成
+                finishLoading(true); // true = 还有更多数据，false = 没有更多数据
             }, 800);
-        };
+        });
 
-        // 获取瀑布流组件
-        const waterfall = document.getElementById('waterfall');
+        // ===================================
+        // 方法二：使用全局函数（向后兼容，不推荐）
+        // ===================================
+        // window.loadMore = function(waterfallComponent) {
+        //     currentPage++;
+        //     setTimeout(() => {
+        //         const itemsPerPage = 12;
+        //         const startIndex = (currentPage - 1) * itemsPerPage + 1;
+        //         const endIndex = currentPage * itemsPerPage;
+        //         for (let i = startIndex; i <= endIndex; i++) {
+        //             const item = createWaterfallItem(i);
+        //             waterfallComponent.appendChild(item);
+        //         }
+        //         waterfallComponent.finishLoading(true);
+        //     }, 800);
+        // };
 
         // 控制面板事件监听
         document.getElementById('rowGapInput').addEventListener('change', (e) => {

@@ -45,10 +45,10 @@ pnpm add wj-waterfall-flow
 </head>
 <body>
   <waterfall-flow 
+    id="waterfall"
     row-gap="10" 
     column-gap="10" 
-    min-column-width="200"
-    onLoadMore="loadMore">
+    min-column-width="200">
     
     <div class="waterfall-item">
       <img src="image1.jpg" alt="Item 1">
@@ -62,20 +62,30 @@ pnpm add wj-waterfall-flow
   </waterfall-flow>
 
   <script>
-    // 加载更多回调
-    function loadMore(component) {
+    // 方式一：使用事件监听（推荐）
+    const waterfall = document.getElementById('waterfall');
+    
+    waterfall.addEventListener('load-more', (event) => {
+      // 重要：阻止默认行为
+      event.preventDefault();
+      
+      const { currentCount, finishLoading } = event.detail;
+      
       // 模拟异步加载
       setTimeout(() => {
         // 添加新项目
         const item = document.createElement('div');
         item.className = 'waterfall-item';
         item.innerHTML = '<img src="new-image.jpg">';
-        component.appendChild(item);
+        waterfall.appendChild(item);
         
-        // 完成加载，hasMore = true 表示还有更多数据
-        component.finishLoading(true);
+        // 完成加载，true = 还有更多数据
+        finishLoading(true);
       }, 1000);
-    }
+    });
+    
+    // 方式二：全局函数（向后兼容，不推荐）
+    // window.loadMore = function(component) { ... }
   </script>
 </body>
 </html>
@@ -86,11 +96,11 @@ pnpm add wj-waterfall-flow
 ```vue
 <template>
   <waterfall-flow
+    ref="waterfallRef"
     :row-gap="10"
     :column-gap="10"
     :min-column-width="200"
-    onLoadMore="loadMore"
-    ref="waterfallRef"
+    @load-more="handleLoadMore"
   >
     <div 
       v-for="item in items" 
@@ -114,15 +124,23 @@ import 'wj-waterfall-flow';
 const items = ref([]);
 const waterfallRef = ref(null);
 
-// 挂载全局回调
-onMounted(() => {
-  window.loadMore = (component) => {
-    fetchMoreItems().then(newItems => {
-      items.value.push(...newItems);
-      component.finishLoading(newItems.length > 0);
-    });
-  };
-});
+// 使用事件监听处理加载（推荐）
+const handleLoadMore = (event) => {
+  const { currentCount, finishLoading } = event.detail;
+  
+  console.log(`当前有 ${currentCount} 个项目，正在加载更多...`);
+  
+  // 异步加载数据
+  fetchMoreItems().then(newItems => {
+    items.value.push(...newItems);
+    finishLoading(newItems.length > 0);
+  });
+};
+
+const fetchMoreItems = async () => {
+  // 你的数据加载逻辑
+  return [];
+};
 </script>
 ```
 
@@ -137,14 +155,34 @@ function WaterfallDemo() {
   const waterfallRef = useRef(null);
 
   useEffect(() => {
-    // 定义全局加载回调
-    window.loadMore = (component) => {
+    const waterfall = waterfallRef.current;
+    if (!waterfall) return;
+
+    // 使用事件监听处理加载（推荐）
+    const handleLoadMore = (event) => {
+      const { currentCount, finishLoading } = event.detail;
+      
+      console.log(`当前有 ${currentCount} 个项目，正在加载更多...`);
+      
+      // 异步加载数据
       fetchMoreItems().then(newItems => {
         setItems(prev => [...prev, ...newItems]);
-        component.finishLoading(newItems.length > 0);
+        finishLoading(newItems.length > 0);
       });
     };
+
+    waterfall.addEventListener('load-more', handleLoadMore);
+
+    // 清理
+    return () => {
+      waterfall.removeEventListener('load-more', handleLoadMore);
+    };
   }, []);
+
+  const fetchMoreItems = async () => {
+    // 你的数据加载逻辑
+    return [];
+  };
 
   return (
     <waterfall-flow
@@ -152,7 +190,6 @@ function WaterfallDemo() {
       row-gap="10"
       column-gap="10"
       min-column-width="200"
-      onLoadMore="loadMore"
     >
       {items.map(item => (
         <div key={item.id} className="waterfall-item">
@@ -179,10 +216,11 @@ function WaterfallDemo() {
 <template>
   <ClientOnly>
     <waterfall-flow
+      ref="waterfallRef"
       :row-gap="10"
       :column-gap="10"
       :min-column-width="200"
-      onLoadMore="loadMore"
+      @load-more="handleLoadMore"
     >
       <div 
         v-for="item in items" 
@@ -204,21 +242,30 @@ function WaterfallDemo() {
 import { ref, onMounted } from 'vue';
 
 const items = ref([]);
+const waterfallRef = ref(null);
 
 // 只在客户端导入
 if (process.client) {
   import('wj-waterfall-flow');
 }
 
-onMounted(() => {
-  window.loadMore = (component) => {
-    // 加载逻辑
-    fetchMoreItems().then(newItems => {
-      items.value.push(...newItems);
-      component.finishLoading(newItems.length > 0);
-    });
-  };
-});
+// 使用事件监听处理加载
+const handleLoadMore = (event) => {
+  const { currentCount, finishLoading } = event.detail;
+  
+  console.log(`当前有 ${currentCount} 个项目`);
+  
+  // 加载逻辑
+  fetchMoreItems().then(newItems => {
+    items.value.push(...newItems);
+    finishLoading(newItems.length > 0);
+  });
+};
+
+const fetchMoreItems = async () => {
+  // 你的数据加载逻辑
+  return [];
+};
 </script>
 ```
 
