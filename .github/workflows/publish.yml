@@ -1,0 +1,42 @@
+name: Publish to npm
+
+# 触发条件：推送 tag 时自动发布
+on:
+  push:
+    tags:
+      - 'v*'  # 匹配 v1.0.0, v2.1.0 等
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      # 2. 设置 Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+      
+      # 3. 安装依赖
+      - name: Install dependencies
+        run: npm ci
+      
+      # 4. 运行类型检查
+      - name: Type check
+        run: npm run type-check
+      
+      # 5. 构建
+      - name: Build
+        run: npm run build
+      
+      # 6. 发布到 npm
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
