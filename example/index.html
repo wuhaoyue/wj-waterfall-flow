@@ -178,12 +178,13 @@
 
         <waterfall-flow id="waterfall" row-gap="10" column-gap="10" min-column-width="200">
             <!-- 项目将通过 JavaScript 动态添加 -->
-            <div slot="loading" style="padding: 20px; text-align: center;">
-                <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite;">
-                </div>
-                <p style="margin-top: 10px; color: #666; font-size: 14px;">正在加载更多...</p>
-            </div>
         </waterfall-flow>
+
+        <!-- 自定义 Loading 显示（在组件外部控制） -->
+        <div id="customLoading" style="display: none; padding: 20px; text-align: center; background: white; border-radius: 10px; margin-top: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <p style="margin-top: 10px; color: #666; font-size: 14px; font-weight: 600;">正在加载更多...</p>
+        </div>
     </div>
 
     <!-- 使用打包后的库 -->
@@ -227,6 +228,7 @@
         // 方法一：使用事件监听（推荐）
         // ===================================
         const waterfall = document.getElementById('waterfall');
+        const customLoading = document.getElementById('customLoading');
         
         waterfall.addEventListener('load-more', (event) => {
             console.log('✅ load-more 事件触发', event.detail);
@@ -238,6 +240,9 @@
             const { currentCount, finishLoading } = event.detail;
             
             console.log(`📦 当前已有 ${currentCount} 个项目，正在加载第 ${currentPage} 页...`);
+            
+            // 显示自定义 Loading
+            customLoading.style.display = 'block';
             
             // 模拟异步加载数据
             setTimeout(() => {
@@ -252,8 +257,14 @@
                 
                 console.log(`✅ 第 ${currentPage} 页加载完成`);
                 
-                // 通知组件加载完成
-                finishLoading(true); // true = 还有更多数据，false = 没有更多数据
+                // 隐藏自定义 Loading
+                customLoading.style.display = 'none';
+                
+                if (currentCount > 120) {
+                    finishLoading(false);
+                } else {
+                    finishLoading(true);
+                }
             }, 800);
         });
 

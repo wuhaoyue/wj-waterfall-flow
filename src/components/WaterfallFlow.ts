@@ -31,6 +31,8 @@ export class WaterfallFlow extends HTMLElement {
   adjustQueue: Set<AdjustmentTask> = new Set();
   isProcessingAdjustments: boolean = false;
   resizeTimer: number | null = null;
+  lastLoadTime: number = 0;
+  lastItemCount: number = 0;
 
   // Bound methods
   private handleResize: () => void;
@@ -115,11 +117,6 @@ export class WaterfallFlow extends HTMLElement {
         <slot></slot>
       </div>
       <div class="loading-trigger"></div>
-      <div class="loading-container">
-        <slot name="loading">
-          <div class="default-loading">加载中...</div>
-        </slot>
-      </div>
     `;
   }
 
@@ -153,12 +150,13 @@ export class WaterfallFlow extends HTMLElement {
 
     this.observer.observe(trigger);
 
-    // Initial check
+    // Initial check - 只在初始化时检查一次
     setTimeout(() => {
       const rect = trigger.getBoundingClientRect();
       const isInViewport = rect.top < window.innerHeight + 200;
 
       if (isInViewport && !this.loading && this.hasMore && this.items.length === 0) {
+        console.log('🚀 初始化：触发首次加载');
         this.handleLoadMore();
       }
     }, 100);
@@ -425,9 +423,23 @@ export class WaterfallFlow extends HTMLElement {
       return;
     }
 
-    console.log('🚀 触发 load-more 事件...');
+    // 防抖：避免短时间内重复触发（500ms 内只能触发一次）
+    const now = Date.now();
+    const timeSinceLastLoad = now - this.lastLoadTime;
+    if (this.lastLoadTime > 0 && timeSinceLastLoad < 500) {
+      console.log('⏸️ 距离上次加载太近，跳过此次请求', {
+        timeSinceLastLoad: `${timeSinceLastLoad}ms`,
+        itemCount: this.items.length
+      });
+      return;
+    }
+
+    console.log('🚀 触发 load-more 事件...', {
+      currentItems: this.items.length,
+      timeSinceLastLoad: this.lastLoadTime > 0 ? `${timeSinceLastLoad}ms` : '首次加载'
+    });
     this.loading = true;
-    this.showLoading();
+    this.lastLoadTime = now;
 
     // 触发自定义事件，让外部通过事件监听处理
     const event = new CustomEvent<LoadMoreDetail>('load-more', {
@@ -461,24 +473,9 @@ export class WaterfallFlow extends HTMLElement {
     }
   }
 
-  private showLoading(): void {
-    const loading = this.shadowRoot?.querySelector('.loading-container') as HTMLElement;
-    if (loading) {
-      loading.classList.remove('hidden');
-    }
-  }
-
-  private hideLoading(): void {
-    const loading = this.shadowRoot?.querySelector('.loading-container') as HTMLElement;
-    if (loading) {
-      loading.classList.add('hidden');
-    }
-  }
-
   finishLoading(hasMore: boolean = true): void {
     this.loading = false;
     this.hasMore = hasMore;
-    this.hideLoading();
 
     if (!hasMore) {
       // 没有更多数据时，断开观察器
@@ -487,24 +484,67 @@ export class WaterfallFlow extends HTMLElement {
       }
     } else {
       // 有更多数据时，等待布局稳定后检查是否需要继续加载
+      // 使用多个 requestAnimationFrame 确保 DOM 完全更新
       requestAnimationFrame(() => {
-        setTimeout(() => {
-          const trigger = this.shadowRoot?.querySelector('.loading-trigger');
-          if (trigger && this.observer) {
-            // 重新观察 trigger 以确保 IntersectionObserver 能够再次触发
-            this.observer.unobserve(trigger);
-            this.observer.observe(trigger);
-            
-            // 检查是否已经在视口内
-            const rect = trigger.getBoundingClientRect();
-            const isInViewport = rect.top < window.innerHeight + 200;
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            const trigger = this.shadowRoot?.querySelector('.loading-trigger');
+            if (trigger && this.observer) {
+              // 重新观察 trigger 以确保 IntersectionObserver 能够再次触发
+              this.observer.unobserve(trigger);
+              this.observer.observe(trigger);
+              
+              // 检查是否有新的项目被添加（确保 DOM 已更新）
+              const currentItemCount = this.items.length;
+              const itemsAdded = currentItemCount - this.lastItemCount;
+              
+              console.log('📊 finishLoading 检查', {
+                currentItemCount,
+                lastItemCount: this.lastItemCount,
+                itemsAdded
+              });
+              
+              // 如果没有新项目被添加到 items 数组，说明可能出了问题，不继续加载
+              if (itemsAdded <= 0) {
+                console.warn('⚠️ 没有检测到新项目，跳过自动加载');
+                this.lastItemCount = currentItemCount;
+                return;
+              }
+              
+              // 更新记录
+              this.lastItemCount = currentItemCount;
+              
+              // 检查容器高度是否足够，只有在内容不足时才主动触发加载
+              const container = this.shadowRoot?.querySelector('.waterfall-container') as HTMLElement;
+              if (container) {
+                const containerHeight = container.offsetHeight;
+                const viewportHeight = window.innerHeight;
+                
+                // 只有当容器高度小于视口高度的 1.5 倍时，才主动检查是否需要继续加载
+                if (containerHeight < viewportHeight * 1.5) {
+                  const rect = trigger.getBoundingClientRect();
+                  const isInViewport = rect.top < window.innerHeight + 200;
 
-            if (isInViewport && !this.loading && this.hasMore) {
-              console.log('🔄 Loading trigger 仍在视口内，继续加载...');
-              this.handleLoadMore();
+                  if (isInViewport && !this.loading && this.hasMore) {
+                    console.log('🔄 内容不足，继续加载...', {
+                      containerHeight,
+                      viewportHeight,
+                      ratio: (containerHeight / viewportHeight).toFixed(2),
+                      itemsAdded
+                    });
+                    this.handleLoadMore();
+                  }
+                } else {
+                  console.log('✅ 内容充足，依赖滚动触发', {
+                    containerHeight,
+                    viewportHeight,
+                    ratio: (containerHeight / viewportHeight).toFixed(2)
+                  });
+                }
+              }
             }
-          }
-        }, 150);
+          }, 800); // 进一步增加延迟，确保 Vue/React 的异步渲染完成
+        });
       });
     }
   }
@@ -556,6 +596,8 @@ export class WaterfallFlow extends HTMLElement {
     this.updateContainerHeight();
     this.hasMore = true;
     this.loading = false;
+    this.lastLoadTime = 0; // 重置加载时间
+    this.lastItemCount = 0; // 重置项目计数
 
     if (this.observer) {
       const trigger = this.shadowRoot?.querySelector('.loading-trigger');
@@ -563,14 +605,19 @@ export class WaterfallFlow extends HTMLElement {
         this.observer.disconnect();
         this.observer.observe(trigger);
 
+        // 清空后等待一段时间再检查，只触发一次初始加载
         setTimeout(() => {
-          const rect = trigger.getBoundingClientRect();
-          const isInViewport = rect.top < window.innerHeight + 200;
+          // 确保没有正在加载，且 items 为空（真的是清空状态）
+          if (!this.loading && this.hasMore && this.items.length === 0) {
+            const rect = trigger.getBoundingClientRect();
+            const isInViewport = rect.top < window.innerHeight + 200;
 
-          if (isInViewport && !this.loading && this.hasMore) {
-            this.handleLoadMore();
+            if (isInViewport) {
+              console.log('🔄 清空后触发初始加载');
+              this.handleLoadMore();
+            }
           }
-        }, 100);
+        }, 300); // 增加延迟时间，与 finishLoading 保持一致
       }
     }
   }

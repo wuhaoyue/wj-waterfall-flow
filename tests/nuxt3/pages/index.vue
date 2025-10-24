@@ -51,13 +51,6 @@
             <p>{{ item.description }}</p>
           </div>
         </div>
-
-        <template #loading>
-          <div class="custom-loading">
-            <div class="spinner"></div>
-            <p>Nuxt 3 加载中...</p>
-          </div>
-        </template>
       </waterfall-flow>
 
       <template #fallback>
@@ -66,6 +59,12 @@
         </div>
       </template>
     </ClientOnly>
+
+    <!-- 自定义 Loading 显示（在组件外部控制） -->
+    <div v-if="isLoading" class="custom-loading">
+      <div class="spinner"></div>
+      <p>Nuxt 3 加载中...</p>
+    </div>
   </div>
 </template>
 
@@ -130,7 +129,7 @@ const handleLoadMore = (event) => {
     if (!hasMore) {
       console.log('⏹️ 已加载所有数据');
     }
-  }, 800);
+  }, 2000);
 };
 
 // 清空项目

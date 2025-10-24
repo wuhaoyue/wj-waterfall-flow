@@ -5,13 +5,14 @@
 ## 📦 测试项目列表
 
 ### ✅ 已完成
-- **Vue 3** - 端口 5180
-- **React** - 端口 5181  
-- **Nuxt 3 (SSR)** - 端口 3003
+- **Vue 2** - 端口 5182 (JavaScript)
+- **Vue 3** - 端口 5180 (TypeScript)
+- **React** - 端口 5181 (TypeScript)
+- **Nuxt 3 (SSR)** - 端口 3003 (TypeScript)
 
-### 🚧 待添加
-- Vue 2 - 端口 5182
-- Nuxt 4 (SSR) - 端口 3004
+### 📝 说明
+- Vue 2 使用 JavaScript（无 TypeScript 支持）
+- 其他框架均使用 TypeScript
 
 ---
 
@@ -27,7 +28,8 @@ npm run test:install
 或手动安装：
 
 ```bash
-cd tests/vue3 && npm install
+cd tests/vue2 && npm install
+cd ../vue3 && npm install
 cd ../react && npm install
 cd ../nuxt3 && npm install
 ```
@@ -37,6 +39,9 @@ cd ../nuxt3 && npm install
 #### 方式一：启动单个测试项目
 
 ```bash
+# Vue 2
+cd tests/vue2 && npm run dev
+
 # Vue 3
 cd tests/vue3 && npm run dev
 
@@ -51,6 +56,7 @@ cd tests/nuxt3 && npm run dev
 
 ```bash
 # 在项目根目录
+npm run test:vue2
 npm run test:vue3
 npm run test:react
 npm run test:nuxt3

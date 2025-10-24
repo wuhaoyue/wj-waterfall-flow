@@ -34,21 +34,5 @@ export const styles = `
     pointer-events: none;
     clear: both;
   }
-  
-  .loading-container {
-    width: 100%;
-    padding: 20px 0;
-    text-align: center;
-    clear: both;
-  }
-  
-  .loading-container.hidden {
-    display: none;
-  }
-  
-  .default-loading {
-    color: #666;
-    font-size: 14px;
-  }
 `;
 

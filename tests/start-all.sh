@@ -17,6 +17,7 @@ check_deps() {
 }
 
 # 检查所有测试项目的依赖
+check_deps "vue2"
 check_deps "vue3"
 check_deps "react"
 check_deps "nuxt3"
@@ -33,21 +34,26 @@ if command -v tmux &> /dev/null; then
     # 创建新的 tmux 会话
     tmux new-session -d -s waterfall-test
     
+    # Vue 2
+    tmux rename-window -t waterfall-test:0 'vue2'
+    tmux send-keys -t waterfall-test:0 'cd tests/vue2 && npm run dev' C-m
+    
     # Vue 3
-    tmux rename-window -t waterfall-test:0 'vue3'
-    tmux send-keys -t waterfall-test:0 'cd tests/vue3 && npm run dev' C-m
+    tmux new-window -t waterfall-test -n 'vue3'
+    tmux send-keys -t waterfall-test:1 'cd tests/vue3 && npm run dev' C-m
     
     # React
     tmux new-window -t waterfall-test -n 'react'
-    tmux send-keys -t waterfall-test:1 'cd tests/react && npm run dev' C-m
+    tmux send-keys -t waterfall-test:2 'cd tests/react && npm run dev' C-m
     
     # Nuxt 3
     tmux new-window -t waterfall-test -n 'nuxt3'
-    tmux send-keys -t waterfall-test:2 'cd tests/nuxt3 && npm run dev' C-m
+    tmux send-keys -t waterfall-test:3 'cd tests/nuxt3 && npm run dev' C-m
     
     echo "✅ 所有测试项目已启动"
     echo ""
     echo "访问地址:"
+    echo "  Vue 2:  http://localhost:5182"
     echo "  Vue 3:  http://localhost:5180"
     echo "  React:  http://localhost:5181"
     echo "  Nuxt 3: http://localhost:3003"
@@ -59,12 +65,14 @@ if command -v tmux &> /dev/null; then
 else
     echo "⚠️  未安装 tmux，将在后台启动项目"
     echo ""
-    echo "请分别在3个终端中运行:"
-    echo "  1. cd tests/vue3 && npm run dev"
-    echo "  2. cd tests/react && npm run dev"
-    echo "  3. cd tests/nuxt3 && npm run dev"
+    echo "请分别在4个终端中运行:"
+    echo "  1. cd tests/vue2 && npm run dev"
+    echo "  2. cd tests/vue3 && npm run dev"
+    echo "  3. cd tests/react && npm run dev"
+    echo "  4. cd tests/nuxt3 && npm run dev"
     echo ""
     echo "或使用以下命令:"
+    echo "  npm run test:vue2"
     echo "  npm run test:vue3"
     echo "  npm run test:react"
     echo "  npm run test:nuxt3"

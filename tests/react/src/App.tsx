@@ -163,12 +163,15 @@ function App() {
             </div>
           </div>
         ))}
+      </waterfall-flow>
 
-        <div slot="loading" className="custom-loading">
+      {/* 自定义 Loading 显示（在组件外部控制） */}
+      {isLoading && (
+        <div className="custom-loading">
           <div className="spinner"></div>
           <p>React 加载中...</p>
         </div>
-      </waterfall-flow>
+      )}
     </div>
   );
 }

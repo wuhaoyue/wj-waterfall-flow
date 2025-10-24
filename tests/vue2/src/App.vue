@@ -1,6 +1,6 @@
 <template>
   <div class="app">
-    <h1>🌊 Vue 3 + Waterfall Flow 测试</h1>
+    <h1>🔧 Vue 2 + Waterfall Flow 测试</h1>
     
     <div class="status">
       <p>✅ 组件已加载</p>
@@ -31,7 +31,6 @@
       :row-gap="rowGap"
       :column-gap="columnGap"
       :min-column-width="minColumnWidth"
-      @load-more="handleLoadMore"
     >
       <div
         v-for="item in items"
@@ -49,97 +48,114 @@
           <p>{{ item.description }}</p>
         </div>
       </div>
-
     </waterfall-flow>
 
     <!-- 自定义 Loading 显示（在组件外部控制） -->
     <div v-if="isLoading" class="custom-loading">
       <div class="spinner"></div>
-      <p>Vue 3 加载中...</p>
+      <p>Vue 2 加载中...</p>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue';
-
-const waterfallRef = ref(null);
-const items = ref([]);
-const currentPage = ref(0);
-const isLoading = ref(false);
-
-// 配置
-const rowGap = ref(10);
-const columnGap = ref(10);
-const minColumnWidth = ref(200);
-
-// 生成随机高度
-const getRandomHeight = () => {
-  return Math.floor(Math.random() * 200) + 150;
-};
-
-// 创建项目
-const createItem = (index) => {
-  const height = getRandomHeight();
-  const width = 300;
-  return {
-    id: `item-${index}-${Date.now()}`,
-    title: `项目 #${index}`,
-    description: `这是第 ${index} 个瀑布流项目，高度为 ${height}px`,
-    image: `https://picsum.photos/${width}/${height}?random=${index}`,
-    aspectRatio: `${width}/${height}`
-  };
-};
-
-// 处理加载更多
-const handleLoadMore = (event) => {
-  console.log('✅ Vue 3: load-more 事件触发', event.detail);
+<script>
+export default {
+  name: 'App',
   
-  isLoading.value = true;
-  currentPage.value++;
-  
-  const { currentCount, finishLoading } = event.detail;
-  
-  console.log(`📦 当前已有 ${currentCount} 个项目，正在加载第 ${currentPage.value} 页...`);
-  
-  // 模拟异步加载
-  setTimeout(() => {
-    const itemsPerPage = 12;
-    const startIndex = (currentPage.value - 1) * itemsPerPage + 1;
-    const endIndex = currentPage.value * itemsPerPage;
-    
-    for (let i = startIndex; i <= endIndex; i++) {
-      items.value.push(createItem(i));
+  data() {
+    return {
+      items: [],
+      currentPage: 0,
+      isLoading: false,
+      rowGap: 10,
+      columnGap: 10,
+      minColumnWidth: 200
+    };
+  },
+
+  mounted() {
+    this.setupLoadMore();
+  },
+
+  beforeDestroy() {
+    // 移除事件监听器
+    if (this.$refs.waterfallRef) {
+      this.$refs.waterfallRef.removeEventListener('load-more', this.handleLoadMore);
     }
-    
-    console.log(`✅ 第 ${currentPage.value} 页加载完成`);
-    
-    isLoading.value = false;
-    
-    // 限制最多 5 页，用于测试无更多数据的情况
-    const hasMore = currentPage.value < 5;
-    finishLoading(hasMore);
-    
-    if (!hasMore) {
-      console.log('⏹️ 已加载所有数据');
+  },
+
+  methods: {
+    setupLoadMore() {
+      const waterfall = this.$refs.waterfallRef;
+      if (waterfall) {
+        waterfall.addEventListener('load-more', this.handleLoadMore);
+      }
+    },
+
+    handleLoadMore(event) {
+      console.log('✅ Vue 2: load-more 事件触发', event.detail);
+      
+      this.isLoading = true;
+      this.currentPage++;
+      
+      const { currentCount, finishLoading } = event.detail;
+      
+      console.log(`📦 当前已有 ${currentCount} 个项目，正在加载第 ${this.currentPage} 页...`);
+      
+      // 模拟异步加载
+      setTimeout(() => {
+        const itemsPerPage = 12;
+        const startIndex = (this.currentPage - 1) * itemsPerPage + 1;
+        const endIndex = this.currentPage * itemsPerPage;
+        
+        for (let i = startIndex; i <= endIndex; i++) {
+          this.items.push(this.createItem(i));
+        }
+        
+        console.log(`✅ 第 ${this.currentPage} 页加载完成`);
+        
+        this.isLoading = false;
+        
+        // 限制最多 5 页
+        const hasMore = this.currentPage < 5;
+        finishLoading(hasMore);
+        
+        if (!hasMore) {
+          console.log('⏹️ 已加载所有数据');
+        }
+      }, 800);
+    },
+
+    getRandomHeight() {
+      return Math.floor(Math.random() * 200) + 150;
+    },
+
+    createItem(index) {
+      const height = this.getRandomHeight();
+      const width = 300;
+      return {
+        id: `item-${index}-${Date.now()}`,
+        title: `项目 #${index}`,
+        description: `这是第 ${index} 个瀑布流项目 (Vue 2)，高度为 ${height}px`,
+        image: `https://picsum.photos/${width}/${height}?random=${index}`,
+        aspectRatio: `${width}/${height}`
+      };
+    },
+
+    clearItems() {
+      this.items = [];
+      this.currentPage = 0;
+      if (this.$refs.waterfallRef) {
+        this.$refs.waterfallRef.clear();
+      }
+    },
+
+    addItems() {
+      const startIndex = this.items.length + 1;
+      for (let i = startIndex; i < startIndex + 12; i++) {
+        this.items.push(this.createItem(i));
+      }
     }
-  }, 800);
-};
-
-// 清空项目
-const clearItems = () => {
-  items.value = [];
-  currentPage.value = 0;
-  if (waterfallRef.value) {
-    waterfallRef.value.clear();
-  }
-};
-
-// 手动添加项目
-const addItems = () => {
-  const startIndex = items.value.length + 1;
-  for (let i = startIndex; i < startIndex + 12; i++) {
-    items.value.push(createItem(i));
   }
 };
 </script>
@@ -159,8 +175,8 @@ h1 {
 }
 
 .status {
-  background: #f0f9ff;
-  border: 1px solid #0ea5e9;
+  background: #fff4e6;
+  border: 1px solid #f59e0b;
   border-radius: 8px;
   padding: 15px;
   margin-bottom: 20px;
@@ -168,7 +184,7 @@ h1 {
 
 .status p {
   margin: 5px 0;
-  color: #0369a1;
+  color: #d97706;
 }
 
 .controls {
@@ -185,17 +201,18 @@ h1 {
 
 .controls button {
   padding: 8px 16px;
-  background: #667eea;
+  background: #f59e0b;
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
+  font-weight: 600;
   transition: all 0.3s;
 }
 
 .controls button:hover {
-  background: #5568d3;
+  background: #d97706;
   transform: translateY(-1px);
 }
 
@@ -262,7 +279,7 @@ h1 {
   width: 40px;
   height: 40px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #667eea;
+  border-top: 4px solid #f59e0b;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 10px;
@@ -274,7 +291,7 @@ h1 {
 }
 
 .custom-loading p {
-  color: #667eea;
+  color: #f59e0b;
   font-weight: 500;
 }
 </style>

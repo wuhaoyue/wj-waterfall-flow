@@ -6,27 +6,33 @@
 npm run test:install
 ```
 
-等待所有测试项目的依赖安装完成（Vue 3, React, Nuxt 3）。
+等待所有测试项目的依赖安装完成（Vue 2, Vue 3, React, Nuxt 3）。
 
 ---
 
 ## 2️⃣ 启动测试
 
-在**3个不同的终端窗口**中运行：
+在**4个不同的终端窗口**中运行：
 
-### 终端 1 - Vue 3
+### 终端 1 - Vue 2
+```bash
+npm run test:vue2
+```
+访问: http://localhost:5182
+
+### 终端 2 - Vue 3 (TypeScript)
 ```bash
 npm run test:vue3
 ```
 访问: http://localhost:5180
 
-### 终端 2 - React
+### 终端 3 - React (TypeScript)
 ```bash
 npm run test:react
 ```
 访问: http://localhost:5181
 
-### 终端 3 - Nuxt 3 (SSR)
+### 终端 4 - Nuxt 3 SSR (TypeScript)
 ```bash
 npm run test:nuxt3
 ```

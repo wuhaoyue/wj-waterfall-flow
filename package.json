@@ -25,10 +25,11 @@
     "release:patch": "npm version patch && git push --follow-tags",
     "release:minor": "npm version minor && git push --follow-tags",
     "release:major": "npm version major && git push --follow-tags",
+    "test:vue2": "cd tests/vue2 && npm run dev",
     "test:vue3": "cd tests/vue3 && npm run dev",
     "test:react": "cd tests/react && npm run dev",
     "test:nuxt3": "cd tests/nuxt3 && npm run dev",
-    "test:install": "cd tests/vue3 && npm install && cd ../react && npm install && cd ../nuxt3 && npm install"
+    "test:install": "cd tests/vue2 && npm install && cd ../vue3 && npm install && cd ../react && npm install && cd ../nuxt3 && npm install"
   },
   "keywords": [
     "waterfall",

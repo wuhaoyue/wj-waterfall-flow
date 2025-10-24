@@ -54,22 +54,26 @@ pnpm add wj-waterfall-flow
       <img src="image1.jpg" alt="Item 1">
       <div class="content">内容 1</div>
     </div>
-    
-    <!-- 自定义 loading -->
-    <div slot="loading">
-      <div class="spinner">Loading...</div>
-    </div>
   </waterfall-flow>
+
+  <!-- 自定义 Loading（在外部控制） -->
+  <div id="loading" style="display: none;">
+    <div class="spinner">加载中...</div>
+  </div>
 
   <script>
     // 方式一：使用事件监听（推荐）
     const waterfall = document.getElementById('waterfall');
+    const loading = document.getElementById('loading');
     
     waterfall.addEventListener('load-more', (event) => {
       // 重要：阻止默认行为
       event.preventDefault();
       
       const { currentCount, finishLoading } = event.detail;
+      
+      // 显示 loading
+      loading.style.display = 'block';
       
       // 模拟异步加载
       setTimeout(() => {
@@ -78,6 +82,9 @@ pnpm add wj-waterfall-flow
         item.className = 'waterfall-item';
         item.innerHTML = '<img src="new-image.jpg">';
         waterfall.appendChild(item);
+        
+        // 隐藏 loading
+        loading.style.display = 'none';
         
         // 完成加载，true = 还有更多数据
         finishLoading(true);
@@ -110,18 +117,20 @@ pnpm add wj-waterfall-flow
       <img :src="item.image" :alt="item.title">
       <div class="content">{{ item.title }}</div>
     </div>
-
-    <template #loading>
-      <div class="loading">加载中...</div>
-    </template>
   </waterfall-flow>
+
+  <!-- 自定义 Loading（在外部控制） -->
+  <div v-if="isLoading" class="loading">
+    <div class="spinner">加载中...</div>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import 'wj-waterfall-flow';
 
 const items = ref([]);
+const isLoading = ref(false);
 const waterfallRef = ref(null);
 
 // 使用事件监听处理加载（推荐）
@@ -130,9 +139,12 @@ const handleLoadMore = (event) => {
   
   console.log(`当前有 ${currentCount} 个项目，正在加载更多...`);
   
+  isLoading.value = true;
+  
   // 异步加载数据
   fetchMoreItems().then(newItems => {
     items.value.push(...newItems);
+    isLoading.value = false;
     finishLoading(newItems.length > 0);
   });
 };
@@ -152,6 +164,7 @@ import 'wj-waterfall-flow';
 
 function WaterfallDemo() {
   const [items, setItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const waterfallRef = useRef(null);
 
   useEffect(() => {
@@ -164,9 +177,12 @@ function WaterfallDemo() {
       
       console.log(`当前有 ${currentCount} 个项目，正在加载更多...`);
       
+      setIsLoading(true);
+      
       // 异步加载数据
       fetchMoreItems().then(newItems => {
         setItems(prev => [...prev, ...newItems]);
+        setIsLoading(false);
         finishLoading(newItems.length > 0);
       });
     };
@@ -185,23 +201,28 @@ function WaterfallDemo() {
   };
 
   return (
-    <waterfall-flow
-      ref={waterfallRef}
-      row-gap="10"
-      column-gap="10"
-      min-column-width="200"
-    >
-      {items.map(item => (
-        <div key={item.id} className="waterfall-item">
-          <img src={item.image} alt={item.title} />
-          <div className="content">{item.title}</div>
-        </div>
-      ))}
+    <>
+      <waterfall-flow
+        ref={waterfallRef}
+        row-gap="10"
+        column-gap="10"
+        min-column-width="200"
+      >
+        {items.map(item => (
+          <div key={item.id} className="waterfall-item">
+            <img src={item.image} alt={item.title} />
+            <div className="content">{item.title}</div>
+          </div>
+        ))}
+      </waterfall-flow>
 
-      <div slot="loading">
-        <div className="spinner">Loading...</div>
-      </div>
-    </waterfall-flow>
+      {/* 自定义 Loading（在外部控制） */}
+      {isLoading && (
+        <div className="loading">
+          <div className="spinner">加载中...</div>
+        </div>
+      )}
+    </>
   );
 }
 ```
@@ -230,18 +251,20 @@ function WaterfallDemo() {
         <img :src="item.image" :alt="item.title">
         <div class="content">{{ item.title }}</div>
       </div>
-
-      <template #loading>
-        <div class="loading">加载中...</div>
-      </template>
     </waterfall-flow>
   </ClientOnly>
+
+  <!-- 自定义 Loading（在外部控制） -->
+  <div v-if="isLoading" class="loading">
+    <div class="spinner">加载中...</div>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 
 const items = ref([]);
+const isLoading = ref(false);
 const waterfallRef = ref(null);
 
 // 只在客户端导入
@@ -255,9 +278,12 @@ const handleLoadMore = (event) => {
   
   console.log(`当前有 ${currentCount} 个项目`);
   
+  isLoading.value = true;
+  
   // 加载逻辑
   fetchMoreItems().then(newItems => {
     items.value.push(...newItems);
+    isLoading.value = false;
     finishLoading(newItems.length > 0);
   });
 };
@@ -368,16 +394,39 @@ waterfall.addEventListener('load-more', (event) => {
 </waterfall-flow>
 ```
 
-#### `loading` 插槽
+### Loading 显示
 
-自定义加载状态显示。
+组件本身不提供内置的 loading 插槽，loading 效果应该由调用方在外部实现。这样可以：
+
+- ✅ 更灵活地控制 loading 的显示和样式
+- ✅ 避免 Shadow DOM 样式隔离带来的问题
+- ✅ 与你的应用 UI 保持一致
+
+**示例：**
 
 ```html
-<waterfall-flow>
-  <div slot="loading">
-    <div class="custom-loader">加载中...</div>
-  </div>
+<!-- 瀑布流组件 -->
+<waterfall-flow @load-more="handleLoadMore">
+  <div class="waterfall-item">...</div>
 </waterfall-flow>
+
+<!-- 在外部控制 Loading -->
+<div v-if="isLoading" class="loading">
+  <div class="spinner">加载中...</div>
+</div>
+```
+
+在 `load-more` 事件处理函数中：
+
+```javascript
+const handleLoadMore = (event) => {
+  isLoading.value = true; // 显示 loading
+  
+  fetchData().then(() => {
+    isLoading.value = false; // 隐藏 loading
+    event.detail.finishLoading(true);
+  });
+};
 ```
 
 ## 🎨 样式自定义
